@@ -1,0 +1,416 @@
+#include "imx8mm-ddr4-evk.dts"
+
+/ {
+	model = "TSARKA i.MX8MM PHONE ALPHA3 0.2a board";
+	leds {
+		compatible = "gpio-leds";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_gpio_led>;
+
+		status {
+			label = "status";
+			gpios = <&gpio3 16 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "heartbeat";
+		};
+	};
+	aliases {
+		/delete-property/ mmc0;
+	};
+
+	// backlight0: backlight@0 {
+	// 	compatible = "pwm-backlight";
+	// 	pwms = <&pwm1 0 50000 0>;
+
+	// 	brightness-levels = < 0 23 23 23 23 23 23 23 23 23
+	// 			     23 23 23 23 23 23 23 23 23 23
+	// 			     23 23 23 23 24 25 26 27 28 29
+	// 			     30 31 32 33 34 35 36 37 38 39
+	// 			     40 41 42 43 44 45 46 47 48 49
+	// 			     50 51 52 53 54 55 56 57 58 59
+	// 			     60 61 62 63 64 65 66 67 68 69
+	// 			     70 71 72 73 74 75 76 77 78 79
+	// 			     80 81 82 83 84 85 86 87 88 89
+	// 			     90 91 92 93 94 95 96 97 98 99
+	// 			    100>;
+	// 	default-brightness-level = <80>;
+	// };
+
+	/delete-node/ sound-wm8524;
+};
+
+// Disable HDMI converter
+&adv_bridge {
+	status = "disabled";
+};
+
+&mipi_dsi {
+	panel@0 {
+		compatible = "raydium,rm67191";
+		reg = <0>;
+		pinctrl-0 = <&pinctrl_mipi_dsi_en>;
+		reset-gpio = <&gpio1 8 GPIO_ACTIVE_LOW>;
+		dsi-lanes = <4>;
+		video-mode = <2>;	/* 0: burst mode
+					 * 1: non-burst mode with sync event
+					 * 2: non-burst mode with sync pulse
+					 * 3: command mode
+					 */
+		panel-width-mm = <68>;
+		panel-height-mm = <121>;
+		status = "okay";
+	};
+
+	// panel@0 {
+	// 	status = "okay";
+	// 	reg = <0>;
+	// 	compatible = "forlinx,mipi7";
+	// 	pinctrl-0 = <&pinctrl_mipi_dsi_en>;
+	// 	// reset-gpio = <&gpio1 8 GPIO_ACTIVE_LOW>;
+	// 	enable-gpios = <&gpio1 8 GPIO_ACTIVE_HIGH>;
+	// };
+};
+
+&usdhc2 {
+	pinctrl-names = "default", "state_100mhz", "state_200mhz";
+	pinctrl-0 = <&pinctrl_usdhc2>, <&pinctrl_usdhc2_gpio>;
+	pinctrl-1 = <&pinctrl_usdhc2_100mhz>, <&pinctrl_usdhc2_gpio>;
+	pinctrl-2 = <&pinctrl_usdhc2_200mhz>, <&pinctrl_usdhc2_gpio>;
+	cd-gpios = <&gpio2 12 GPIO_ACTIVE_LOW>;
+	bus-width = <4>;
+	vmmc-supply = <&reg_usdhc2_vmmc>;
+	status = "okay";
+};
+
+&usdhc3 {
+	pinctrl-names = "default", "state_100mhz", "state_200mhz";
+	pinctrl-0 = <&pinctrl_usdhc3>;
+	pinctrl-1 = <&pinctrl_usdhc3_100mhz>;
+	pinctrl-2 = <&pinctrl_usdhc3_200mhz>;
+	bus-width = <8>;
+	non-removable;
+	status = "okay";
+};
+
+&usbotg1 {
+	dr_mode = "host";
+	status = "okay";
+};
+
+&usbotg2 {
+	dr_mode = "host";
+	status = "okay";
+};
+ 
+/delete-node/&usdhc1;
+/delete-node/&reg_usdhc1_vmmc;
+/delete-node/&ethphy0;
+&fec1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_fec1>;
+	phy-mode = "rgmii-id";
+	phy-handle = <&ethphy1>;
+	fsl,magic-packet;
+	status = "okay";
+
+	mdio {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		ethphy1: ethernet-phy@0 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <0>;
+			reset-assert-us = <100000>;
+			reset-deassert-us = <1000000>;
+			reset-gpios = <&gpio2 10 GPIO_ACTIVE_LOW>;
+			// interrupt-parent = <&gpio2>; // pin 2.11
+ 			// interrupts = <11 IRQ_TYPE_LEVEL_LOW>;
+			at803x,led-act-blind-workaround;
+			at803x,eee-okay;
+			at803x,vddio-1p8v;
+		};
+	};
+};
+
+/delete-node/&ov5640_mipi;
+/delete-node/&pcie0;
+/delete-node/&pcie_phy;
+/delete-node/&pinctrl_pcie0;
+/delete-node/&pinctrl_pcie0_reg;
+/delete-node/&pcie0_ep;
+/delete-node/&reg_pcie0;
+
+/delete-node/&pinctrl_gpio_wlf;
+/delete-node/&wm8524;
+
+&i2c4 {
+    #address-cells = <1>;
+    #size-cells = <0>;
+	clock-frequency = <100000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c4>;
+	status = "okay";
+
+    ov5647_mipi@36 {
+        compatible = "ovti,ov5647_mipi";
+        reg = <0x36>;
+        clocks = <&cam1_clk>;
+    	clock-names = "csi_mclk";
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_csi_pwn>;
+		pwn-gpios = <&gpio5 1 GPIO_ACTIVE_HIGH>;
+		// rst-gpios = <&lsio_gpio1 27 GPIO_ACTIVE_LOW>;
+		mclk = <24000000>;
+		mclk_source = <0>;
+		mipi_csi;
+		csi_id = <0>;
+
+        port {
+            camera_out: endpoint {
+            	remote-endpoint=<&camera_sink>;
+            };
+        };
+        cam1_clk: cam1_clk {
+            #clock-cells = <0>;
+            compatible = "fixed-clock";
+            clock-frequency = <24000000>;
+        };       
+    };
+
+	// touchscreen@1a {
+	// 	compatible = "goodix,gt1151";
+	// 	reg = <0x1a>;
+	// 	pinctrl-names = "default";
+	// 	pinctrl-0 = <&pinctrl_i2c4_synaptics_dsx_io>;
+	// 	interrupt-parent = <&gpio1>;
+	// 	interrupts = <10 IRQ_TYPE_EDGE_FALLING>;
+	// 	irq-gpios = <&gpio1 10 GPIO_ACTIVE_HIGH>;
+	// 	edge-failling-trigger;
+	// 	touchscreen-size-x = <1080>;
+	// 	touchscreen-size-y = <1920>;
+	// };
+
+	// hynitron@1a {
+	// 		compatible = "hynitron,cst340";
+	// 		reg = <0x1a>;
+	// 		hynitron,display-coords = <0 0 720 1280>;
+	// 		hynitron,panel-coords = <0 0 720 1280>;
+	// 		hynitron,button-map= <139 102 158>;
+	// 		hynitron,vdd_ana = <2800>;
+	// 		hynitron,vcc_i2c = <1800>;
+	// 		gtp_int_trigger = <1>;
+	// 		gtp_change_x2y = <0>;
+	// 		gtp_overturn_x = <1>;
+	// 		gtp_overturn_y = <1>;
+	// 		gtp_send_cfg = <1>;
+	// 		gtp_touch_wakeup = <1>;
+	// 		hynitron,rst-gpio = <&gpio1 1  GPIO_ACTIVE_LOW>;
+	// 		hynitron,irq-gpio = <&gpio1 10 IRQ_TYPE_EDGE_FALLING>;
+	// };
+
+	// <<<<-------------->>>>
+	touch@1a {
+		compatible = "hynitron,cst340";
+		reg = <0x1a>;
+		// pinctrl-names = "default";
+		// pinctrl-0 = <&pinctrl_i2c4_synaptics_dsx_io>;
+		reset-gpios = <&gpio1 1 GPIO_ACTIVE_LOW>; // TODO: REPLACE
+		interrupt-parent = <&gpio1>;
+		interrupts = <10 IRQ_TYPE_EDGE_FALLING>;
+		// irq-gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
+		// pinctrl-0 = <&touch_rst>;
+		// pinctrl-names = "default";
+		// reset-gpios = <&gpio4 RK_PA6 GPIO_ACTIVE_LOW>;
+		touchscreen-size-x = <640>;
+		touchscreen-size-y = <480>;
+	};
+	//<<<<----------------->>>>
+
+	// cst148@1a { /* Touch: Hynitron Touch panel (1080p display) */
+	// 	compatible = "hynitron,cst1xx";
+	// 	reg = <0x1a>; 
+	// 	vdd_ana-supply = <&reg_3p3v>;
+	// 	vcc_i2c-supply = <&reg_3p3v>;
+	// 	hynitron,panel-coords = <0 1080 0 1920>;
+	// 	hynitron,display-coords = <0 1080 0 1920>;
+	// 	pinctrl-names = "default";
+	// 	pinctrl-0 = <&pinctrl_ts_active>;
+	// /*dee	hynitron,irq-gpio = <&gpio1 8 GPIO_ACTIVE_LOW>;*/
+	// 	hynitron,rst-gpio = <&gpio1 1 GPIO_ACTIVE_LOW>;
+	// 	report_type = <1>;
+	// 	status = "okay";
+	// };
+
+	// Touch panel GOODIX (Forlinx display)
+	// gt928_ts@38 {
+	// 	compatible = "goodix,gt928";
+	// 	reg = <0x38>;
+	// 	pinctrl-names = "default";
+	// 	pinctrl-0 = <&pinctrl_ft5x06_int>;
+	// 	interrupt-parent = <&gpio1>;
+	// 	interrupts = <10 2>;
+	// 	pwron-gpios = <&gpio1 8 GPIO_ACTIVE_LOW>;
+	// 	goodix,rst-gpio = <&gpio1 9 0>;
+	// 	goodix,irq-gpio = <&gpio1 10 0>;
+	// 	status = "okay";
+	// };
+
+
+	// edt-ft5306@38 {
+	// 	status = "okay";
+	// 	compatible = "edt,edt-ft5306", "edt,edt-ft5x06";
+	// 	pinctrl-names = "default";
+	// 	pinctrl-0 = <&pinctrl_ft5x06_int>;
+
+	// 	reg = <0x38>;
+	// 	interrupt-parent = <&gpio1>;
+	// 	interrupts = <10 IRQ_TYPE_EDGE_FALLING>;
+
+	// 	reset-gpios = <&gpio1 9 GPIO_ACTIVE_LOW>;
+	// 	wakeup-gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
+
+    //      touchscreen-size-x = <1024>;
+    //      touchscreen-size-y = <600>;
+    //     //  touchscreen-inverted-x;
+    //     //  touchscreen-swapped-x-y;
+    //      linux,wakeup;
+
+
+	// 	// touchscreen-size-x = <1024>;
+	// 	// touchscreen-size-y = <600>;
+
+	// 	// wakeup-source;
+	// };
+};
+
+/delete-node/&mipi1_sensor_ep;
+/delete-node/&csi1_mipi_ep;
+&mipi_csi_1 {
+	/delete-property/ port;
+    #address-cells = <1>;
+    #size-cells = <0>;
+    status = "okay";
+    port@0 {
+        reg = <0>;
+        camera_sink: endpoint@1 {
+            remote-endpoint = <&camera_out>;
+            clock-lanes = <0>;
+                        data-lanes = <2>;
+                        clock-noncontinuous;
+                        link-frequencies = /bits/ 64 <297000000>;
+        };
+        csi1_mipi_ep: endpoint@2 {
+            remote-endpoint = <&csi1_ep>;
+        };
+    };
+};
+
+&iomuxc {
+	pinctrl_reg_usdhc1_vmmc: regusdhc1vmmcgrp {
+		fsl,pins = <>;
+	};
+	pinctrl_fec1: fec1grp {
+		fsl,pins = <
+			MX8MM_IOMUXC_ENET_MDC_ENET1_MDC			0x3
+			MX8MM_IOMUXC_ENET_MDIO_ENET1_MDIO		0x3
+			MX8MM_IOMUXC_ENET_TD3_ENET1_RGMII_TD3		0x1f
+			MX8MM_IOMUXC_ENET_TD2_ENET1_RGMII_TD2		0x1f
+			MX8MM_IOMUXC_ENET_TD1_ENET1_RGMII_TD1		0x1f
+			MX8MM_IOMUXC_ENET_TD0_ENET1_RGMII_TD0		0x1f
+			MX8MM_IOMUXC_ENET_RD3_ENET1_RGMII_RD3		0x91
+			MX8MM_IOMUXC_ENET_RD2_ENET1_RGMII_RD2		0x91
+			MX8MM_IOMUXC_ENET_RD1_ENET1_RGMII_RD1		0x91
+			MX8MM_IOMUXC_ENET_RD0_ENET1_RGMII_RD0		0x91
+			MX8MM_IOMUXC_ENET_TXC_ENET1_RGMII_TXC		0x1f
+			MX8MM_IOMUXC_ENET_RXC_ENET1_RGMII_RXC		0x91
+			MX8MM_IOMUXC_ENET_RX_CTL_ENET1_RGMII_RX_CTL	0x91
+			MX8MM_IOMUXC_ENET_TX_CTL_ENET1_RGMII_TX_CTL	0x1f
+			// MX8MM_IOMUXC_SAI2_RXC_GPIO4_IO22		0x19
+            MX8MM_IOMUXC_SD1_RESET_B_GPIO2_IO10     0x19
+		>;
+	};
+
+	pinctrl_usdhc3: usdhc3grp {
+		fsl,pins = <
+			MX8MM_IOMUXC_NAND_WE_B_USDHC3_CLK		0x190
+			MX8MM_IOMUXC_NAND_WP_B_USDHC3_CMD		0x1d0
+			MX8MM_IOMUXC_NAND_DATA04_USDHC3_DATA0		0x1d0
+			MX8MM_IOMUXC_NAND_DATA05_USDHC3_DATA1		0x1d0
+			MX8MM_IOMUXC_NAND_DATA06_USDHC3_DATA2		0x1d0
+			MX8MM_IOMUXC_NAND_DATA07_USDHC3_DATA3		0x1d0
+			MX8MM_IOMUXC_NAND_RE_B_USDHC3_DATA4		0x1d0
+			MX8MM_IOMUXC_NAND_CE2_B_USDHC3_DATA5		0x1d0
+			MX8MM_IOMUXC_NAND_CE3_B_USDHC3_DATA6		0x1d0
+			MX8MM_IOMUXC_NAND_CLE_USDHC3_DATA7		0x1d0
+			MX8MM_IOMUXC_NAND_CE1_B_USDHC3_STROBE 		0x190
+		>;
+	};
+
+	pinctrl_usdhc3_100mhz: usdhc3grp100mhz {
+		fsl,pins = <
+			MX8MM_IOMUXC_NAND_WE_B_USDHC3_CLK		0x194
+			MX8MM_IOMUXC_NAND_WP_B_USDHC3_CMD		0x1d4
+			MX8MM_IOMUXC_NAND_DATA04_USDHC3_DATA0		0x1d4
+			MX8MM_IOMUXC_NAND_DATA05_USDHC3_DATA1		0x1d4
+			MX8MM_IOMUXC_NAND_DATA06_USDHC3_DATA2		0x1d4
+			MX8MM_IOMUXC_NAND_DATA07_USDHC3_DATA3		0x1d4
+			MX8MM_IOMUXC_NAND_RE_B_USDHC3_DATA4		0x1d4
+			MX8MM_IOMUXC_NAND_CE2_B_USDHC3_DATA5		0x1d4
+			MX8MM_IOMUXC_NAND_CE3_B_USDHC3_DATA6		0x1d4
+			MX8MM_IOMUXC_NAND_CLE_USDHC3_DATA7		0x1d4
+			MX8MM_IOMUXC_NAND_CE1_B_USDHC3_STROBE 		0x194
+		>;
+	};
+
+	pinctrl_usdhc3_200mhz: usdhc3grp200mhz {
+		fsl,pins = <
+			MX8MM_IOMUXC_NAND_WE_B_USDHC3_CLK		0x196
+			MX8MM_IOMUXC_NAND_WP_B_USDHC3_CMD		0x1d6
+			MX8MM_IOMUXC_NAND_DATA04_USDHC3_DATA0		0x1d6
+			MX8MM_IOMUXC_NAND_DATA05_USDHC3_DATA1		0x1d6
+			MX8MM_IOMUXC_NAND_DATA06_USDHC3_DATA2		0x1d6
+			MX8MM_IOMUXC_NAND_DATA07_USDHC3_DATA3		0x1d6
+			MX8MM_IOMUXC_NAND_RE_B_USDHC3_DATA4		0x1d6
+			MX8MM_IOMUXC_NAND_CE2_B_USDHC3_DATA5		0x1d6
+			MX8MM_IOMUXC_NAND_CE3_B_USDHC3_DATA6		0x1d6
+			MX8MM_IOMUXC_NAND_CLE_USDHC3_DATA7		0x1d6
+			MX8MM_IOMUXC_NAND_CE1_B_USDHC3_STROBE 		0x196
+		>;
+	};
+
+	pinctrl_i2c4: i2c4grp {
+		fsl,pins = <
+			MX8MM_IOMUXC_I2C4_SCL_I2C4_SCL			0x400001c3
+			MX8MM_IOMUXC_I2C4_SDA_I2C4_SDA			0x400001c3
+		>;
+	};
+
+	pinctrl_i2c4_synaptics_dsx_io: synaptics_dsx_iogrp {
+		fsl,pins = <
+			MX8MM_IOMUXC_GPIO1_IO10_GPIO1_IO10               0x19    /* Touch int */
+		>;
+	};
+
+
+	pinctrl_csi_pwn: csi_pwn_grp {
+		fsl,pins = <
+			MX8MM_IOMUXC_SAI3_TXD_GPIO5_IO1		0x19
+		>;
+	};
+
+	// Touch panel FT5316 (Forlinx)
+	pinctrl_ft5x06_int: ft5x06_int {
+		fsl,pins = <
+			MX8MM_IOMUXC_GPIO1_IO10_GPIO1_IO10		0x159
+			MX8MM_IOMUXC_GPIO1_IO09_GPIO1_IO9		0x159	
+		>;
+	};
+
+	// pinctrl_mipi_csi0: mipicsi0grp{
+	// 	fsl,pins = <
+	// 		SC_P_MIPI_CSI0_MCLK_OUT_MIPI_CSI0_ACM_MCLK_OUT 0xC0000041
+	// 		SC_P_MIPI_CSI0_GPIO0_01_LSIO_GPIO3_IO07 0xC0000041
+	// 		SC_P_MIPI_CSI0_GPIO0_00_LSIO_GPIO3_IO08 0xC0000041
+	// 	>;
+	// };
+};
